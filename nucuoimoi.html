@@ -11,43 +11,56 @@
 
     <style>
         body { background-color: #f8f9fa; display: flex; flex-direction: column; min-height: 100vh; }
+        .man-hinh-an { display: none !important; }
+
         .marquee-container {
             overflow: hidden; white-space: nowrap; width: 100%;
             background: linear-gradient(90deg, #e3f2fd, #bbdefb, #e3f2fd);
-            padding: 8px 0; border-radius: 8px;
+            padding: 10px 0; border-radius: 8px;
+        }
+        
+        @keyframes colorChange {
+            0% { color: #ff0000; } 
+            25% { color: #00cc00; } 
+            50% { color: #0000ff; } 
+            75% { color: #ff00ff; } 
+            100% { color: #ff0000; }
         }
         .marquee-text {
-            display: inline-block; font-size: 1.3rem; font-weight: bold; color: #0d6efd;
-            animation: marquee 12s linear infinite;
+            display: inline-block; font-size: 1.5rem; font-weight: bold;
+            animation: marquee 15s linear infinite, colorChange 3s linear infinite;
         }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+        
         .logo-nha-khoa { width: 70px; height: 70px; object-fit: contain; }
         
-        /* Màn hình đăng nhập */
         #loginArea { height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #e9ecef; }
         .login-box { width: 400px; padding: 30px; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
         
-        /* Căn chỉnh in ấn */
         @media print {
-            @page { size: A4; margin: 15mm; }
+            @page { size: A4; margin: 10mm; }
             body * { visibility: hidden; }
             #phieuInArea, #phieuInArea * { visibility: visible; }
-            #phieuInArea { position: absolute; left: 0; top: 0; width: 100%; }
+            #phieuInArea { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
+            .table-print, .table-print th, .table-print td { border: 1.5pt solid black !important; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
-        .table-print { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 15px; }
-        .table-print th, .table-print td { border: 1px solid #000 !important; padding: 8px 5px; text-align: center; vertical-align: middle; }
-        .table-print th { background-color: #f9f9f9 !important; font-weight: bold; }
+        
+        .table-print { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .table-print th, .table-print td { border: 1px solid #000; padding: 8px; text-align: center; }
+        .table-print th { background-color: #f2f2f2 !important; font-weight: bold; }
+        .footer-copyright { margin-top: auto; padding: 15px 0; background: #e9ecef; text-align: center; font-size: 0.9rem; color: #444; font-weight: bold; }
 
-        /* Footer */
-        .footer-copyright { margin-top: auto; padding: 15px 0; background: #e9ecef; text-align: center; font-size: 0.9rem; color: #6c757d; font-weight: bold; }
+        /* Icon thông báo đồng bộ dữ liệu */
+        .sync-icon { color: #00cc00; font-size: 0.9rem; animation: blink 2s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div id="loginArea">
     <div class="login-box">
-        <img src="logonucuoimoi.png" alt="Logo" class="logo-nha-khoa mb-3">
+        <img src="logonucuoimoi.png" alt="Logo" class="logo-nha-khoa mb-3" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2865/2865520.png'">
         <h4 class="text-primary fw-bold mb-4">HỆ THỐNG NHA KHOA</h4>
         <form id="formLogin">
             <div class="mb-3 text-start">
@@ -62,15 +75,16 @@
                 <label class="form-label fw-bold">Mật Khẩu</label>
                 <input type="password" id="loginPass" class="form-control" required placeholder="Nhập mật khẩu...">
             </div>
-            <button type="submit" class="btn btn-primary w-100 fw-bold py-2">ĐĂNG NHẬP</button>
+            <button type="submit" class="btn btn-primary w-100 fw-bold py-2" id="btnDangNhap">ĐĂNG NHẬP</button>
+            <div id="loadingMsg" class="mt-2 text-primary small fw-bold" style="display: none;"><i class="fa-solid fa-spinner fa-spin"></i> Đang kết nối máy chủ...</div>
         </form>
     </div>
 </div>
 
-<div id="mainArea" class="container-fluid mt-3 px-4" style="display: none; flex-grow: 1;">
+<div id="mainArea" class="container-fluid mt-3 px-4 man-hinh-an" style="flex-grow: 1;">
     <div class="row align-items-center mb-3 bg-white p-2 rounded shadow-sm">
         <div class="col-md-1 text-center">
-            <img src="logonucuoimoi.png" alt="Logo" class="logo-nha-khoa">
+            <img src="logonucuoimoi.png" alt="Logo" class="logo-nha-khoa" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2865/2865520.png'">
         </div>
         <div class="col-md-7 text-center">
             <div class="marquee-container">
@@ -79,9 +93,9 @@
         </div>
         <div class="col-md-4 text-end">
             <span class="fw-bold text-success me-3">Xin chào: <span id="displayRoleName" class="text-danger"></span></span>
-            <button class="btn btn-sm btn-outline-primary fw-bold" onclick="moDoiMatKhau()"><i class="fa-solid fa-key"></i> Đổi Mật Khẩu</button>
-            <button class="btn btn-sm btn-outline-warning fw-bold" id="btnQuanLyTK" style="display: none;" onclick="moQuanLyTK()"><i class="fa-solid fa-users"></i> Quản lý TK</button>
-            <button class="btn btn-sm btn-danger fw-bold ms-1" onclick="dangXuat()"><i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất</button>
+            <button class="btn btn-sm btn-outline-primary fw-bold" onclick="window.moDoiMatKhau()"><i class="fa-solid fa-key"></i> Đổi Pass</button>
+            <button class="btn btn-sm btn-outline-warning fw-bold" id="btnQuanLyTK" style="display: none;" onclick="window.moQuanLyTK()"><i class="fa-solid fa-users"></i> Quản lý TK</button>
+            <button class="btn btn-sm btn-danger fw-bold ms-1" onclick="window.dangXuat()"><i class="fa-solid fa-right-from-bracket"></i> Thoát</button>
         </div>
     </div>
 
@@ -133,7 +147,7 @@
         <div class="col-md-9">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">Danh Sách Bệnh Nhân - Tổng: <span id="tongHoSo">0</span></h6>
+                    <h6 class="mb-0">Danh Sách Bệnh Nhân - Tổng: <span id="tongHoSo">0</span> <i class="fa-solid fa-cloud sync-icon ms-2" title="Đang đồng bộ Online"></i></h6>
                     <input type="text" id="searchInput" class="form-control form-control-sm w-50" placeholder="🔍 Tìm Tên, SĐT, Mã HS...">
                 </div>
                 <div class="card-body p-0">
@@ -141,13 +155,7 @@
                         <table class="table table-hover table-striped mb-0 align-middle text-center">
                             <thead class="table-light sticky-top">
                                 <tr>
-                                    <th>Cơ sở</th>
-                                    <th>Mã HS</th>
-                                    <th>Họ Tên</th>
-                                    <th>SĐT</th>
-                                    <th>Lưu ý</th>
-                                    <th>Trạng Thái</th>
-                                    <th>Thao Tác</th>
+                                    <th>Cơ sở</th><th>Mã HS</th><th>Họ Tên</th><th>SĐT</th><th>Lưu ý</th><th>Trạng Thái</th><th>Thao Tác</th>
                                 </tr>
                             </thead>
                             <tbody id="bangHoSo"></tbody>
@@ -159,8 +167,8 @@
     </div>
 </div>
 
-<div id="footerArea" class="footer-copyright" style="display: none;">
-    <i class="fa-solid fa-code"></i> Phiên bản Quản Lý 1.0 - Được lập trình và phát triển bởi Đặng Ngọc Văn
+<div id="footerArea" class="footer-copyright man-hinh-an">
+    <i class="fa-solid fa-code"></i> Phiên bản Quản Lý Điện Toán Đám Mây - Code by Đặng Ngọc Văn
 </div>
 
 <div class="modal fade" id="chiTietModal" tabindex="-1" aria-hidden="true">
@@ -180,53 +188,28 @@
                 <div class="card shadow-sm mb-3 border-info">
                     <div class="card-body p-2">
                         <form id="formDieuTri" class="row g-2 align-items-end">
-                            <div class="col-md-2">
-                                <label class="form-label small mb-0">Ngày</label>
-                                <input type="date" id="dt-ngay" class="form-control form-control-sm" required>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small mb-0">Điều Trị</label>
-                                <input type="text" id="dt-congTac" class="form-control form-control-sm" required>
-                            </div>
-                            <div class="col-md-1">
-                                <label class="form-label small mb-0">Tổng Chi Phí</label>
-                                <input type="number" id="dt-chiPhi" class="form-control form-control-sm" value="0">
-                            </div>
-                            <div class="col-md-1">
-                                <label class="form-label small mb-0">Đã Trả</label>
-                                <input type="number" id="dt-daTra" class="form-control form-control-sm" value="0">
-                            </div>
-                            <div class="col-md-1">
-                                <label class="form-label small mb-0">Còn Lại</label>
-                                <input type="number" id="dt-conLai" class="form-control form-control-sm bg-warning fw-bold" readonly value="0">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small mb-0">Bác Sĩ</label>
-                                <input type="text" id="dt-bacSi" class="form-control form-control-sm">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small mb-0">Hẹn Tới</label>
-                                <input type="date" id="dt-lichHen" class="form-control form-control-sm">
-                            </div>
-                            <div class="col-md-1">
-                                <button type="submit" class="btn btn-success btn-sm w-100 fw-bold"><i class="fa-solid fa-plus"></i> Thêm</button>
-                            </div>
+                            <div class="col-md-2"><label class="form-label small mb-0">Ngày</label><input type="date" id="dt-ngay" class="form-control form-control-sm" required></div>
+                            <div class="col-md-2"><label class="form-label small mb-0">Điều Trị</label><input type="text" id="dt-congTac" class="form-control form-control-sm" required></div>
+                            <div class="col-md-1"><label class="form-label small mb-0">Tổng Chi Phí</label><input type="number" id="dt-chiPhi" class="form-control form-control-sm" value="0"></div>
+                            <div class="col-md-1"><label class="form-label small mb-0">Đã Trả</label><input type="number" id="dt-daTra" class="form-control form-control-sm" value="0"></div>
+                            <div class="col-md-1"><label class="form-label small mb-0">Còn Lại</label><input type="number" id="dt-conLai" class="form-control form-control-sm bg-warning fw-bold" readonly value="0"></div>
+                            <div class="col-md-2"><label class="form-label small mb-0">Bác Sĩ</label><input type="text" id="dt-bacSi" class="form-control form-control-sm"></div>
+                            <div class="col-md-2"><label class="form-label small mb-0">Hẹn Tới</label><input type="date" id="dt-lichHen" class="form-control form-control-sm"></div>
+                            <div class="col-md-1"><button type="submit" class="btn btn-success btn-sm w-100 fw-bold"><i class="fa-solid fa-plus"></i> THÊM</button></div>
                         </form>
                     </div>
                 </div>
 
                 <table class="table table-bordered table-sm text-center bg-white align-middle">
                     <thead class="table-secondary">
-                        <tr>
-                            <th>Ngày</th><th>Điều trị</th><th>Chi phí</th><th>Đã trả</th><th>Còn lại</th><th>Bác sĩ</th><th>Lịch hẹn</th><th>Xóa</th>
-                        </tr>
+                        <tr><th>Ngày</th><th>Điều trị</th><th>Chi phí</th><th>Đã trả</th><th>Còn lại</th><th>Bác sĩ</th><th>Lịch hẹn</th><th>Xóa</th></tr>
                     </thead>
                     <tbody id="bangChiTietDieuTri"></tbody>
                 </table>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-danger" onclick="xuatPDFCurrent()"><i class="fa-solid fa-file-pdf"></i> Xuất PDF</button>
-                <button type="button" class="btn btn-secondary" onclick="inHoSoCurrent()"><i class="fa-solid fa-print"></i> In Hồ Sơ</button>
+                <button type="button" class="btn btn-danger" onclick="window.xuatPDFCurrent()"><i class="fa-solid fa-file-pdf"></i> Xuất PDF</button>
+                <button type="button" class="btn btn-secondary" onclick="window.inHoSoCurrent()"><i class="fa-solid fa-print"></i> In Hồ Sơ</button>
             </div>
         </div>
     </div>
@@ -243,7 +226,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="btnHuyDoiPass" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary" onclick="luuMatKhauMoi()">Lưu Mật Khẩu</button>
+                <button type="button" class="btn btn-primary" onclick="window.luuMatKhauMoi()">Lưu Mật Khẩu</button>
             </div>
         </div>
     </div>
@@ -257,8 +240,8 @@
                 <table class="table table-bordered text-center align-middle">
                     <thead class="table-light"><tr><th>Chi Nhánh</th><th>Thao tác Admin</th></tr></thead>
                     <tbody>
-                        <tr><td class="fw-bold text-info">Chi Nhánh 1</td><td><button class="btn btn-sm btn-danger" onclick="resetPass('CN1')">Reset về '123'</button></td></tr>
-                        <tr><td class="fw-bold text-warning">Chi Nhánh 2</td><td><button class="btn btn-sm btn-danger" onclick="resetPass('CN2')">Reset về '123'</button></td></tr>
+                        <tr><td class="fw-bold text-info">Chi Nhánh 1</td><td><button class="btn btn-sm btn-danger" onclick="window.resetPass('CN1')">Reset về '123'</button></td></tr>
+                        <tr><td class="fw-bold text-warning">Chi Nhánh 2</td><td><button class="btn btn-sm btn-danger" onclick="window.resetPass('CN2')">Reset về '123'</button></td></tr>
                     </tbody>
                 </table>
                 <p class="small text-muted mt-2">* Nhấn Reset sẽ khôi phục mật khẩu của chi nhánh về <strong>123</strong> và ép chi nhánh phải đổi mật khẩu ở lần đăng nhập tiếp theo.</p>
@@ -267,10 +250,10 @@
     </div>
 </div>
 
-<div id="phieuInArea" style="display: none; padding: 0 15px; background: white; color: black; font-family: 'Times New Roman', serif;">
+<div id="phieuInArea" class="man-hinh-an" style="padding: 0 15px; background: white; color: black; font-family: 'Times New Roman', serif;">
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
         <tr>
-            <td style="width: 15%; text-align: center; vertical-align: top;"><img src="logonucuoimoi.png" style="width: 90px; height: auto;" alt="Logo"></td>
+            <td style="width: 15%; text-align: center; vertical-align: top;"><img src="logonucuoimoi.png" style="width: 90px; height: auto;" alt="Logo" onerror="this.style.display='none'"></td>
             <td style="width: 85%; padding-left: 10px;">
                 <h2 style="color: #0d6efd; margin: 0; font-size: 24px;">NHA KHOA NỤ CƯỜI MỚI</h2>
                 <table style="width: 100%; font-size: 14px; margin-top: 5px;">
@@ -287,7 +270,7 @@
     </div>
     <table style="width: 100%; font-size: 16px; line-height: 2;">
         <tr><td colspan="3">Họ Và Tên (Full Name): <strong id="printHoTen"></strong></td></tr>
-        <tr><td style="width: 33%;">Năm Sinh: <strong id="printNamSinh"></strong></td><td style="width: 34%;">Địa Chỉ: <strong id="printDiaChi"></strong></td><td style="width: 33%;">SĐT: <strong id="printSDT"></strong></td></tr>
+        <tr><td style="width: 33%;">Năm Sinh (Birthday): <strong id="printNamSinh"></strong></td><td style="width: 34%;">Địa Chỉ (Address): <strong id="printDiaChi"></strong></td><td style="width: 33%;">SĐT (Phone Number): <strong id="printSDT"></strong></td></tr>
         <tr><td colspan="3">Lưu ý (Note): <span id="printLuuY"></span></td></tr>
     </table>
     <table class="table-print">
@@ -300,40 +283,81 @@
     <p style="text-align: right; margin-right: 40px; font-size: 16px;"><strong>Bác sĩ phụ trách</strong></p>
 </div>
 
-<script>
-    let passModal;
-    let qltkModal;
-    let modalChiTiet;
-    
+<script type="module">
+    // Import thư viện Firebase trực tiếp không cần cài đặt
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // Cấu hình Firebase mà anh Văn đã cung cấp
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEnLcRdniQAE5O7eNgTTbS3rO_ZtmONNY",
+      authDomain: "nhakhoanucuoimoi-4b9e0.firebaseapp.com",
+      databaseURL: "https://nhakhoanucuoimoi-4b9e0-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "nhakhoanucuoimoi-4b9e0",
+      storageBucket: "nhakhoanucuoimoi-4b9e0.firebasestorage.app",
+      messagingSenderId: "293793344219",
+      appId: "1:293793344219:web:2af0dc24735b9042e43afe"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // --- BIẾN TOÀN CỤC ---
+    let passModal, qltkModal, modalChiTiet;
+    let dbUsers = {};
+    let danhSachHoSo = [];
+    let currentUserRole = null; 
+    let hosoDangMo = null;
+
     document.addEventListener("DOMContentLoaded", function() {
         passModal = new bootstrap.Modal(document.getElementById('modalDoiMatKhau'));
         qltkModal = new bootstrap.Modal(document.getElementById('modalQuanLyTK'));
         modalChiTiet = new bootstrap.Modal(document.getElementById('chiTietModal'));
     });
 
-    let dbUsers = JSON.parse(localStorage.getItem('NhaKhoaUsers'));
-    if (!dbUsers) {
-        dbUsers = {
-            "ALL": { pass: "admin", isFirst: false, name: "Quản Lý Tổng" },
-            "CN1": { pass: "123", isFirst: true, name: "Chi Nhánh 1" },
-            "CN2": { pass: "123", isFirst: true, name: "Chi Nhánh 2" }
-        };
-        localStorage.setItem('NhaKhoaUsers', JSON.stringify(dbUsers));
-    }
+    // --- 1. LẤY & LẮNG NGHE DỮ LIỆU TÀI KHOẢN (ONLINE) ---
+    const usersRef = doc(db, "settings", "accounts");
+    onSnapshot(usersRef, (snap) => {
+        if (snap.exists()) {
+            dbUsers = snap.data();
+            document.getElementById('loadingMsg').style.display = 'none';
+        } else {
+            // Lần chạy đầu tiên: Tạo mật khẩu gốc đưa lên mạng
+            dbUsers = {
+                "ALL": { pass: "admin", isFirst: false, name: "Quản Lý Tổng" },
+                "CN1": { pass: "123", isFirst: true, name: "Chi Nhánh 1" },
+                "CN2": { pass: "123", isFirst: true, name: "Chi Nhánh 2" }
+            };
+            setDoc(usersRef, dbUsers);
+            document.getElementById('loadingMsg').style.display = 'none';
+        }
+    });
 
-    let danhSachHoSo = JSON.parse(localStorage.getItem('NhaKhoaData')) || [];
-    let currentUserRole = null; 
+    // --- 2. LẤY & LẮNG NGHE DANH SÁCH BỆNH NHÂN (ONLINE) ---
+    onSnapshot(collection(db, "patients"), (snapshot) => {
+        danhSachHoSo = [];
+        snapshot.forEach((doc) => {
+            danhSachHoSo.push(doc.data());
+        });
+        if(currentUserRole) renderTable(); // Cập nhật lại bảng lập tức nếu có ai đó vừa sửa dữ liệu
+    });
 
+    // --- XỬ LÝ ĐĂNG NHẬP ---
     document.getElementById('formLogin').addEventListener('submit', function(e) {
         e.preventDefault();
         const role = document.getElementById('loginUser').value;
         const pass = document.getElementById('loginPass').value;
 
+        if(!dbUsers[role]) {
+            document.getElementById('loadingMsg').style.display = 'block';
+            return;
+        }
+
         if (dbUsers[role].pass === pass) {
             currentUserRole = role;
-            document.getElementById('loginArea').style.display = 'none';
-            document.getElementById('mainArea').style.display = 'block';
-            document.getElementById('footerArea').style.display = 'block';
+            document.getElementById('loginArea').classList.add('man-hinh-an');
+            document.getElementById('mainArea').classList.remove('man-hinh-an');
+            document.getElementById('footerArea').classList.remove('man-hinh-an');
             document.getElementById('displayRoleName').innerText = dbUsers[role].name;
             
             if(role === 'ALL') {
@@ -357,23 +381,24 @@
         }
     });
 
-    function dangXuat() {
+    window.dangXuat = () => {
         currentUserRole = null;
-        document.getElementById('mainArea').style.display = 'none';
-        document.getElementById('footerArea').style.display = 'none';
-        document.getElementById('loginArea').style.display = 'flex';
+        document.getElementById('mainArea').classList.add('man-hinh-an');
+        document.getElementById('footerArea').classList.add('man-hinh-an');
+        document.getElementById('loginArea').classList.remove('man-hinh-an');
         document.getElementById('loginPass').value = '';
-    }
+    };
 
-    function moDoiMatKhau() {
+    // --- QUẢN LÝ MẬT KHẨU (Đồng bộ lên Firebase) ---
+    window.moDoiMatKhau = () => {
         document.getElementById('msgDoiPass').innerText = "";
         document.getElementById('btnHuyDoiPass').style.display = 'inline-block';
         document.getElementById('newPass').value = '';
         document.getElementById('confirmPass').value = '';
         passModal.show();
-    }
+    };
 
-    function luuMatKhauMoi() {
+    window.luuMatKhauMoi = async () => {
         const p1 = document.getElementById('newPass').value;
         const p2 = document.getElementById('confirmPass').value;
         if(p1.length < 3) return alert("Mật khẩu phải từ 3 ký tự trở lên!");
@@ -381,56 +406,48 @@
         
         dbUsers[currentUserRole].pass = p1;
         dbUsers[currentUserRole].isFirst = false;
-        localStorage.setItem('NhaKhoaUsers', JSON.stringify(dbUsers));
+        await setDoc(usersRef, dbUsers);
         alert("Đổi mật khẩu thành công!");
         passModal.hide();
-    }
+    };
 
-    function moQuanLyTK() { qltkModal.show(); }
-    function resetPass(role) {
+    window.moQuanLyTK = () => { qltkModal.show(); };
+    window.resetPass = async (role) => {
         if(confirm(`Khôi phục mật khẩu ${role} về '123'?`)) {
             dbUsers[role].pass = "123";
             dbUsers[role].isFirst = true;
-            localStorage.setItem('NhaKhoaUsers', JSON.stringify(dbUsers));
-            alert("Đã reset mật khẩu thành công!");
+            await setDoc(usersRef, dbUsers);
+            alert("Đã reset mật khẩu thành công trên hệ thống!");
         }
-    }
+    };
 
-    function luuDuLieu() { localStorage.setItem('NhaKhoaData', JSON.stringify(danhSachHoSo)); }
-
-    // --- SẮP XẾP LÊN ĐẦU: ĐẢO NGƯỢC DANH SÁCH KHI RENDER ---
+    // --- RENDER BẢNG BỆNH NHÂN ---
     function renderTable(data = danhSachHoSo) {
         const bangHoSo = document.getElementById('bangHoSo');
         bangHoSo.innerHTML = ''; 
         let dataHienThi = currentUserRole === 'ALL' ? data : data.filter(hs => hs.chiNhanh === currentUserRole);
-        
-        // Tạo một bản sao và đảo ngược thứ tự để người mới nhất lên đầu
         let dataDaoNguoc = [...dataHienThi].reverse();
-        
         document.getElementById('tongHoSo').innerText = dataDaoNguoc.length;
 
         dataDaoNguoc.forEach((hs) => {
-            // Hàm findIndex giúp luôn tìm đúng vị trí của hồ sơ trong danhSachHoSo gốc, bất chấp việc đã đảo ngược
-            const realIdx = danhSachHoSo.findIndex(item => item.maHS === hs.maHS);
             const tenCN = hs.chiNhanh === 'CN1' ? '<span class="badge bg-info text-dark">Ma Lâm</span>' : '<span class="badge bg-warning text-dark">Hồng Sơn</span>';
-            
             let btnXoaHTML = '';
             let trangThaiHTML = hs.yeuCauXoa ? '<span class="badge bg-danger">Chờ duyệt xóa</span>' : '<span class="badge bg-success">Bình thường</span>';
 
             if (currentUserRole === 'ALL') {
                 if (hs.yeuCauXoa) {
                     btnXoaHTML = `
-                        <button class="btn btn-sm btn-danger fw-bold" onclick="adminDuyetXoa(${realIdx})">Duyệt Xóa</button>
-                        <button class="btn btn-sm btn-secondary fw-bold" onclick="adminHuyXoa(${realIdx})">Hủy</button>
+                        <button class="btn btn-sm btn-danger fw-bold" onclick="window.adminDuyetXoa('${hs.maHS}')">Duyệt Xóa</button>
+                        <button class="btn btn-sm btn-secondary fw-bold" onclick="window.adminHuyXoa('${hs.maHS}')">Hủy</button>
                     `;
                 } else {
-                    btnXoaHTML = `<button class="btn btn-sm btn-outline-danger" onclick="adminDuyetXoa(${realIdx})" title="Xóa luôn"><i class="fa-solid fa-trash"></i></button>`;
+                    btnXoaHTML = `<button class="btn btn-sm btn-outline-danger" onclick="window.adminDuyetXoa('${hs.maHS}')" title="Xóa luôn"><i class="fa-solid fa-trash"></i></button>`;
                 }
             } else {
                 if (hs.yeuCauXoa) {
                     btnXoaHTML = `<button class="btn btn-sm btn-secondary" disabled>Đang chờ xóa...</button>`;
                 } else {
-                    btnXoaHTML = `<button class="btn btn-sm btn-outline-danger" onclick="chiNhanhYeuCauXoa(${realIdx})" title="Yêu cầu Admin xóa"><i class="fa-solid fa-trash"></i> Gửi Y/C Xóa</button>`;
+                    btnXoaHTML = `<button class="btn btn-sm btn-outline-danger" onclick="window.chiNhanhYeuCauXoa('${hs.maHS}')" title="Yêu cầu Admin xóa"><i class="fa-solid fa-trash"></i> Gửi Y/C Xóa</button>`;
                 }
             }
 
@@ -439,7 +456,7 @@
                     <td>${tenCN}</td><td class="fw-bold text-primary">${hs.maHS}</td><td class="fw-bold text-start">${hs.hoTen}</td>
                     <td>${hs.sdt}</td><td class="small text-start">${hs.luuY}</td><td>${trangThaiHTML}</td>
                     <td>
-                        <button class="btn btn-sm btn-info text-white fw-bold me-1" onclick="moChiTiet('${hs.maHS}')"><i class="fa-solid fa-pen-to-square"></i> Khám</button>
+                        <button class="btn btn-sm btn-info text-white fw-bold me-1" onclick="window.moChiTiet('${hs.maHS}')"><i class="fa-solid fa-pen-to-square"></i> Khám</button>
                         ${btnXoaHTML}
                     </td>
                 </tr>
@@ -447,30 +464,39 @@
         });
     }
 
-    function chiNhanhYeuCauXoa(idx) {
+    // --- THAO TÁC XÓA (Giao tiếp Firebase) ---
+    window.chiNhanhYeuCauXoa = async (maHS) => {
         if(confirm("Gửi yêu cầu xóa hồ sơ này lên Quản Lý?")) {
-            danhSachHoSo[idx].yeuCauXoa = true; luuDuLieu(); renderTable();
+            await updateDoc(doc(db, "patients", maHS), { yeuCauXoa: true });
         }
-    }
-    function adminDuyetXoa(idx) {
+    };
+    window.adminDuyetXoa = async (maHS) => {
         if(confirm("Hồ sơ sẽ bị xóa VĨNH VIỄN. Bạn có chắc chắn?")) {
-            danhSachHoSo.splice(idx, 1); luuDuLieu(); renderTable();
+            await deleteDoc(doc(db, "patients", maHS));
         }
-    }
-    function adminHuyXoa(idx) {
-        danhSachHoSo[idx].yeuCauXoa = false; luuDuLieu(); renderTable();
-    }
+    };
+    window.adminHuyXoa = async (maHS) => {
+        await updateDoc(doc(db, "patients", maHS), { yeuCauXoa: false });
+    };
 
-    document.getElementById('formHoSo').addEventListener('submit', function(e) {
+    // --- THÊM HỒ SƠ MỚI ---
+    document.getElementById('formHoSo').addEventListener('submit', async function(e) {
         e.preventDefault();
-        danhSachHoSo.push({
+        const maHS = document.getElementById('maHS').value;
+        const newPatient = {
             chiNhanh: document.getElementById('chiNhanh').value,
-            maHS: document.getElementById('maHS').value, hoTen: document.getElementById('hoTen').value,
-            namSinh: document.getElementById('namSinh').value, diaChi: document.getElementById('diaChi').value,
-            sdt: document.getElementById('sdt').value, luuY: document.getElementById('luuY').value,
-            yeuCauXoa: false, lichSuDieuTri: [] 
-        });
-        luuDuLieu(); renderTable(); this.reset(); 
+            maHS: maHS, 
+            hoTen: document.getElementById('hoTen').value,
+            namSinh: document.getElementById('namSinh').value, 
+            diaChi: document.getElementById('diaChi').value,
+            sdt: document.getElementById('sdt').value, 
+            luuY: document.getElementById('luuY').value,
+            yeuCauXoa: false, 
+            lichSuDieuTri: [] 
+        };
+        // Gửi lên máy chủ Firebase
+        await setDoc(doc(db, "patients", maHS), newPatient);
+        this.reset(); 
     });
 
     document.getElementById('searchInput').addEventListener('keyup', function(e) {
@@ -487,14 +513,13 @@
     iChiPhi.addEventListener('input', tinhTien);
     iDaTra.addEventListener('input', tinhTien);
 
-    let hosoDangMo = null;
-
     function formatDay(dateStr) {
         if (!dateStr) return '';
         const [y, m, d] = dateStr.split('-'); return `${d}/${m}/${y}`;
     }
 
-    function moChiTiet(maHS) {
+    // --- QUẢN LÝ KHÁM CHỮA BỆNH ---
+    window.moChiTiet = (maHS) => {
         hosoDangMo = danhSachHoSo.find(item => item.maHS === maHS);
         document.getElementById('md-mahs').innerText = hosoDangMo.maHS;
         document.getElementById('md-hoten').innerText = hosoDangMo.hoTen;
@@ -502,10 +527,12 @@
         document.getElementById('md-luuy').innerText = hosoDangMo.luuY || 'Không có';
         document.getElementById('dt-ngay').valueAsDate = new Date();
         renderBangDieuTri(); modalChiTiet.show();
-    }
+    };
 
     function renderBangDieuTri() {
         const tbody = document.getElementById('bangChiTietDieuTri'); tbody.innerHTML = '';
+        if(!hosoDangMo || !hosoDangMo.lichSuDieuTri) return;
+
         hosoDangMo.lichSuDieuTri.forEach((dt, i) => {
             tbody.innerHTML += `
                 <tr>
@@ -514,27 +541,42 @@
                     <td class="text-success fw-bold">${Number(dt.daTra).toLocaleString('vi-VN')}</td>
                     <td class="text-warning fw-bold">${Number(dt.conLai).toLocaleString('vi-VN')}</td>
                     <td>${dt.bacSi}</td><td class="fw-bold text-primary">${formatDay(dt.lichHen)}</td>
-                    <td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="xoaDieuTri(${i})">x</button></td>
+                    <td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="window.xoaDieuTri(${i})">x</button></td>
                 </tr>`;
         });
     }
 
-    document.getElementById('formDieuTri').addEventListener('submit', function(e) {
+    document.getElementById('formDieuTri').addEventListener('submit', async function(e) {
         e.preventDefault();
-        hosoDangMo.lichSuDieuTri.push({
-            ngay: document.getElementById('dt-ngay').value, congTac: document.getElementById('dt-congTac').value,
-            chiPhi: document.getElementById('dt-chiPhi').value, daTra: document.getElementById('dt-daTra').value,
-            conLai: document.getElementById('dt-conLai').value, bacSi: document.getElementById('dt-bacSi').value, lichHen: document.getElementById('dt-lichHen').value
-        });
-        luuDuLieu(); renderBangDieuTri();
+        
+        const newDt = {
+            ngay: document.getElementById('dt-ngay').value, 
+            congTac: document.getElementById('dt-congTac').value,
+            chiPhi: document.getElementById('dt-chiPhi').value, 
+            daTra: document.getElementById('dt-daTra').value,
+            conLai: document.getElementById('dt-conLai').value, 
+            bacSi: document.getElementById('dt-bacSi').value, 
+            lichHen: document.getElementById('dt-lichHen').value
+        };
+        
+        hosoDangMo.lichSuDieuTri.push(newDt);
+        
+        // Cập nhật lên Firebase
+        await updateDoc(doc(db, "patients", hosoDangMo.maHS), { lichSuDieuTri: hosoDangMo.lichSuDieuTri });
+        
+        renderBangDieuTri();
         document.getElementById('dt-congTac').value = ''; document.getElementById('dt-chiPhi').value = '0';
         document.getElementById('dt-daTra').value = '0'; document.getElementById('dt-conLai').value = '0';
         document.getElementById('dt-lichHen').value = ''; document.getElementById('dt-ngay').valueAsDate = new Date();
     });
 
-    function xoaDieuTri(index) {
-        if(confirm("Xóa lịch sử khám này?")) { hosoDangMo.lichSuDieuTri.splice(index, 1); luuDuLieu(); renderBangDieuTri(); }
-    }
+    window.xoaDieuTri = async (index) => {
+        if(confirm("Xóa lịch sử khám này?")) { 
+            hosoDangMo.lichSuDieuTri.splice(index, 1); 
+            await updateDoc(doc(db, "patients", hosoDangMo.maHS), { lichSuDieuTri: hosoDangMo.lichSuDieuTri });
+            renderBangDieuTri(); 
+        }
+    };
 
     function chuanBiPhieuIn() {
         document.getElementById('printMaHS').innerText = hosoDangMo.maHS; document.getElementById('printHoTen').innerText = hosoDangMo.hoTen;
@@ -548,14 +590,14 @@
         document.getElementById('printBangDieuTri').innerHTML = inBody;
     }
 
-    function inHoSoCurrent() {
-        chuanBiPhieuIn(); document.getElementById('phieuInArea').style.display = 'block'; window.print(); document.getElementById('phieuInArea').style.display = 'none';
-    }
+    window.inHoSoCurrent = () => {
+        chuanBiPhieuIn(); document.getElementById('phieuInArea').classList.remove('man-hinh-an'); window.print(); document.getElementById('phieuInArea').classList.add('man-hinh-an');
+    };
 
-    function xuatPDFCurrent() {
-        chuanBiPhieuIn(); const el = document.getElementById('phieuInArea'); el.style.display = 'block';
-        html2pdf().set({ margin: 0.3, filename: `HoSo_${hosoDangMo.maHS}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'A4', orientation: 'portrait' } }).from(el).save().then(() => { el.style.display = 'none'; });
-    }
+    window.xuatPDFCurrent = () => {
+        chuanBiPhieuIn(); const el = document.getElementById('phieuInArea'); el.classList.remove('man-hinh-an');
+        html2pdf().set({ margin: 0.3, filename: `HoSo_${hosoDangMo.maHS}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'A4', orientation: 'portrait' } }).from(el).save().then(() => { el.classList.add('man-hinh-an'); });
+    };
 </script>
 </body>
 </html>
