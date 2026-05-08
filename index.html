@@ -399,17 +399,48 @@
     };
 
     window.luuMatKhauMoi = async () => {
-        const p1 = document.getElementById('newPass').value;
-        const p2 = document.getElementById('confirmPass').value;
-        if(p1.length < 3) return alert("Mật khẩu phải từ 3 ký tự trở lên!");
-        if(p1 !== p2) return alert("Mật khẩu nhập lại không khớp!");
-        
+    const p1 = document.getElementById('newPass').value;
+    const p2 = document.getElementById('confirmPass').value;
+
+    if (p1.length < 3) {
+        alert("Mật khẩu phải từ 3 ký tự trở lên!");
+        return;
+    }
+
+    if (p1 !== p2) {
+        alert("Mật khẩu nhập lại không khớp!");
+        return;
+    }
+
+    try {
         dbUsers[currentUserRole].pass = p1;
         dbUsers[currentUserRole].isFirst = false;
+
         await setDoc(usersRef, dbUsers);
+
         alert("Đổi mật khẩu thành công!");
+
+        // đóng modal
         passModal.hide();
-    };
+
+        // cho phép bấm nút hủy lại
+        document.getElementById('btnHuyDoiPass').style.display = 'inline-block';
+
+        // xóa backdrop bị kẹt
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+
+        // bỏ class modal-open
+        document.body.classList.remove('modal-open');
+
+        // reset form
+        document.getElementById('newPass').value = '';
+        document.getElementById('confirmPass').value = '';
+
+    } catch (err) {
+        console.error(err);
+        alert("Lỗi khi lưu mật khẩu!");
+    }
+};
 
     window.moQuanLyTK = () => { qltkModal.show(); };
     window.resetPass = async (role) => {
