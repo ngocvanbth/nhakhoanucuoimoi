@@ -339,7 +339,19 @@
         snapshot.forEach((doc) => {
             danhSachHoSo.push(doc.data());
         });
-        if(currentUserRole) renderTable(); // Cập nhật lại bảng lập tức nếu có ai đó vừa sửa dữ liệu
+        if(currentUserRole) renderTable(); // Cập nhật lại bảng chính
+
+        // FIX LỖI 1: Tự động cập nhật nội dung bảng điều trị nếu Modal đang mở
+        if(hosoDangMo) {
+            const dataMoi = danhSachHoSo.find(h => h.maHS === hosoDangMo.maHS);
+            if(dataMoi) {
+                hosoDangMo = dataMoi;
+                // Nếu modal đang hiển thị thì vẽ lại bảng điều trị
+                if(document.getElementById('chiTietModal').classList.contains('show')) {
+                    renderBangDieuTri();
+                }
+            }
+        }
     });
 
     // --- XỬ LÝ ĐĂNG NHẬP ---
@@ -389,7 +401,7 @@
         document.getElementById('loginPass').value = '';
     };
 
-    // --- QUẢN LÝ MẬT KHẨU (Đồng bộ lên Firebase) ---
+    // --- QUẢN LÝ MẬT KHẨU ---
     window.moDoiMatKhau = () => {
         document.getElementById('msgDoiPass').innerText = "";
         document.getElementById('btnHuyDoiPass').style.display = 'inline-block';
@@ -398,18 +410,57 @@
         passModal.show();
     };
 
-    window.luuMatKhauMoi = async () => {
-        const p1 = document.getElementById('newPass').value;
-        const p2 = document.getElementById('confirmPass').value;
-        if(p1.length < 3) return alert("Mật khẩu phải từ 3 ký tự trở lên!");
-        if(p1 !== p2) return alert("Mật khẩu nhập lại không khớp!");
-        
+    // FIX LỖI 2: Đóng modal cưỡng bách sau khi đổi mật khẩu
+    // FIX LỖI 2: Đóng modal cưỡng bách sau khi đổi mật khẩu
+window.luuMatKhauMoi = async () => {
+    // Lấy nút bấm để làm hiệu ứng loading
+    const btnSave = document.querySelector('button[onclick="window.luuMatKhauMoi()"]');
+    const p1 = document.getElementById('newPass').value;
+    const p2 = document.getElementById('confirmPass').value;
+    
+    if(p1.length < 3) return alert("Mật khẩu phải từ 3 ký tự trở lên!");
+    if(p1 !== p2) return alert("Mật khẩu nhập lại không khớp!");
+    
+    try {
+        // Khóa nút và đổi text để báo hiệu hệ thống đang xử lý
+        const textGoc = btnSave.innerHTML;
+        btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+        btnSave.disabled = true;
+
+        // Cập nhật dữ liệu
         dbUsers[currentUserRole].pass = p1;
         dbUsers[currentUserRole].isFirst = false;
+        
+        // Đẩy dữ liệu lên mây (Bọc trong try...catch để bắt lỗi nếu rớt mạng)
         await setDoc(usersRef, dbUsers);
+        
+        // Đóng modal bằng biến toàn cục passModal đã khai báo ở trên (chắc chắn hơn getInstance)
+        if (passModal) {
+            passModal.hide();
+        }
+        
+        // Dọn dẹp nền đen thủ công phòng trường hợp Bootstrap kẹt
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = "auto";
+        document.body.style.paddingRight = "0px";
+        
         alert("Đổi mật khẩu thành công!");
-        passModal.hide();
-    };
+        
+        // Trả lại trạng thái nút
+        btnSave.innerHTML = textGoc;
+        btnSave.disabled = false;
+
+    } catch (error) {
+        // Nếu Firebase báo lỗi, app sẽ thông báo cho anh thay vì "im re"
+        alert("Lỗi khi lưu mật khẩu lên máy chủ: " + error.message);
+        console.error("Lỗi chi tiết:", error);
+        
+        // Trả lại trạng thái nút để bấm lại
+        btnSave.innerHTML = 'Lưu Mật Khẩu';
+        btnSave.disabled = false;
+    }
+};
 
     window.moQuanLyTK = () => { qltkModal.show(); };
     window.resetPass = async (role) => {
@@ -447,7 +498,7 @@
                 if (hs.yeuCauXoa) {
                     btnXoaHTML = `<button class="btn btn-sm btn-secondary" disabled>Đang chờ xóa...</button>`;
                 } else {
-                    btnXoaHTML = `<button class="btn btn-sm btn-outline-danger" onclick="window.chiNhanhYeuCauXoa('${hs.maHS}')" title="Yêu cầu Admin xóa"><i class="fa-solid fa-trash"></i> Gửi Y/C Xóa</button>`;
+                    btnXoaHTML = `<button class="btn btn-sm btn-outline-danger" onclick="window.chiNhanhYeuCauYeuCauXoa('${hs.maHS}')" title="Yêu cầu Admin xóa"><i class="fa-solid fa-trash"></i> Gửi Y/C Xóa</button>`;
                 }
             }
 
@@ -464,7 +515,7 @@
         });
     }
 
-    // --- THAO TÁC XÓA (Giao tiếp Firebase) ---
+    // --- THAO TÁC XÓA ---
     window.chiNhanhYeuCauXoa = async (maHS) => {
         if(confirm("Gửi yêu cầu xóa hồ sơ này lên Quản Lý?")) {
             await updateDoc(doc(db, "patients", maHS), { yeuCauXoa: true });
@@ -494,7 +545,6 @@
             yeuCauXoa: false, 
             lichSuDieuTri: [] 
         };
-        // Gửi lên máy chủ Firebase
         await setDoc(doc(db, "patients", maHS), newPatient);
         this.reset(); 
     });
@@ -526,11 +576,13 @@
         document.getElementById('md-sdt').innerText = hosoDangMo.sdt;
         document.getElementById('md-luuy').innerText = hosoDangMo.luuY || 'Không có';
         document.getElementById('dt-ngay').valueAsDate = new Date();
-        renderBangDieuTri(); modalChiTiet.show();
+        renderBangDieuTri(); 
+        modalChiTiet.show();
     };
 
     function renderBangDieuTri() {
-        const tbody = document.getElementById('bangChiTietDieuTri'); tbody.innerHTML = '';
+        const tbody = document.getElementById('bangChiTietDieuTri'); 
+        tbody.innerHTML = '';
         if(!hosoDangMo || !hosoDangMo.lichSuDieuTri) return;
 
         hosoDangMo.lichSuDieuTri.forEach((dt, i) => {
@@ -548,7 +600,6 @@
 
     document.getElementById('formDieuTri').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
         const newDt = {
             ngay: document.getElementById('dt-ngay').value, 
             congTac: document.getElementById('dt-congTac').value,
@@ -558,45 +609,55 @@
             bacSi: document.getElementById('dt-bacSi').value, 
             lichHen: document.getElementById('dt-lichHen').value
         };
-        
         hosoDangMo.lichSuDieuTri.push(newDt);
-        
-        // Cập nhật lên Firebase
         await updateDoc(doc(db, "patients", hosoDangMo.maHS), { lichSuDieuTri: hosoDangMo.lichSuDieuTri });
         
-        renderBangDieuTri();
-        document.getElementById('dt-congTac').value = ''; document.getElementById('dt-chiPhi').value = '0';
-        document.getElementById('dt-daTra').value = '0'; document.getElementById('dt-conLai').value = '0';
-        document.getElementById('dt-lichHen').value = ''; document.getElementById('dt-ngay').valueAsDate = new Date();
+        // Reset form nhưng KHÔNG cần gọi renderBangDieuTri vì onSnapshot sẽ lo
+        document.getElementById('dt-congTac').value = ''; 
+        document.getElementById('dt-chiPhi').value = '0';
+        document.getElementById('dt-daTra').value = '0'; 
+        document.getElementById('dt-conLai').value = '0';
+        document.getElementById('dt-lichHen').value = ''; 
     });
 
     window.xoaDieuTri = async (index) => {
         if(confirm("Xóa lịch sử khám này?")) { 
             hosoDangMo.lichSuDieuTri.splice(index, 1); 
             await updateDoc(doc(db, "patients", hosoDangMo.maHS), { lichSuDieuTri: hosoDangMo.lichSuDieuTri });
-            renderBangDieuTri(); 
         }
     };
 
     function chuanBiPhieuIn() {
-        document.getElementById('printMaHS').innerText = hosoDangMo.maHS; document.getElementById('printHoTen').innerText = hosoDangMo.hoTen;
-        document.getElementById('printNamSinh').innerText = hosoDangMo.namSinh; document.getElementById('printDiaChi').innerText = hosoDangMo.diaChi;
-        document.getElementById('printSDT').innerText = hosoDangMo.sdt; document.getElementById('printLuuY').innerText = hosoDangMo.luuY || '';
+        document.getElementById('printMaHS').innerText = hosoDangMo.maHS; 
+        document.getElementById('printHoTen').innerText = hosoDangMo.hoTen;
+        document.getElementById('printNamSinh').innerText = hosoDangMo.namSinh; 
+        document.getElementById('printDiaChi').innerText = hosoDangMo.diaChi;
+        document.getElementById('printSDT').innerText = hosoDangMo.sdt; 
+        document.getElementById('printLuuY').innerText = hosoDangMo.luuY || '';
         let inBody = '';
         hosoDangMo.lichSuDieuTri.forEach(dt => {
             inBody += `<tr><td>${formatDay(dt.ngay)}</td><td style="text-align: left;">${dt.congTac}</td><td>${Number(dt.chiPhi).toLocaleString('vi-VN')}</td><td>${Number(dt.daTra).toLocaleString('vi-VN')}</td><td>${Number(dt.conLai).toLocaleString('vi-VN')}</td><td>${dt.bacSi}</td><td>${formatDay(dt.lichHen)}</td></tr>`;
         });
-        for(let i = hosoDangMo.lichSuDieuTri.length; i < 8; i++) { inBody += `<tr><td height="30"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`; }
+        for(let i = hosoDangMo.lichSuDieuTri.length; i < 8; i++) { 
+            inBody += `<tr><td height="30"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`; 
+        }
         document.getElementById('printBangDieuTri').innerHTML = inBody;
     }
 
     window.inHoSoCurrent = () => {
-        chuanBiPhieuIn(); document.getElementById('phieuInArea').classList.remove('man-hinh-an'); window.print(); document.getElementById('phieuInArea').classList.add('man-hinh-an');
+        chuanBiPhieuIn(); 
+        document.getElementById('phieuInArea').classList.remove('man-hinh-an'); 
+        window.print(); 
+        document.getElementById('phieuInArea').classList.add('man-hinh-an');
     };
 
     window.xuatPDFCurrent = () => {
-        chuanBiPhieuIn(); const el = document.getElementById('phieuInArea'); el.classList.remove('man-hinh-an');
-        html2pdf().set({ margin: 0.3, filename: `HoSo_${hosoDangMo.maHS}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'A4', orientation: 'portrait' } }).from(el).save().then(() => { el.classList.add('man-hinh-an'); });
+        chuanBiPhieuIn(); 
+        const el = document.getElementById('phieuInArea'); 
+        el.classList.remove('man-hinh-an');
+        html2pdf().set({ margin: 0.3, filename: `HoSo_${hosoDangMo.maHS}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'A4', orientation: 'portrait' } }).from(el).save().then(() => { 
+            el.classList.add('man-hinh-an'); 
+        });
     };
 </script>
 </body>
